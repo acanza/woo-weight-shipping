@@ -1,0 +1,61 @@
+# Copyright (C) 2011 Optingram
+# This file is distributed under the same license as the WordPress Importer package.
+msgid ""
+msgstr ""
+"Project-Id-Version: Optingram 1.0\n"
+"Report-Msgid-Bugs-To: http://wordpress.org/tag/wordpress-importer\n"
+"POT-Creation-Date: 2011-07-16 15:45:12+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: 2014-06-16 19:19+0100\n"
+"Last-Translator: Antonio Cantero <cantero.zamorano@gmail.com>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"X-Generator: Poedit 1.5.5\n"
+
+#. Plugin Name of the plugin/theme
+msgid "Woo Weight Shipping"
+msgstr ""
+
+msgid "Cost per additional Kg"
+msgstr "Coste por Kg adicional"
+
+msgid "Main shipping table rates"
+msgstr "Tabla principal de gastos de envío "
+
+msgid "Delivery costs depending on the order weight."
+msgstr "Los gastos de envío dependen del peso del pedido."
+
+msgid "From [X] Kg"
+msgstr "Desde [X] Kg"
+
+msgid "Any weight"
+msgstr "Cualquier peso"
+
+msgid "Add Cost"
+msgstr "Añadir peso"
+
+msgid "Special shipping rates"
+msgstr "Tarifas de envío especial"
+
+msgid "Special shipping rates for some regions depending on the post codes."
+msgstr ""
+"Las tarifas de envío especial se aplican a algunas regiones dependiendo del "
+"código postal de destino."
+
+msgid "Posts Codes"
+msgstr "Códigos postales"
+
+msgid "Add Region"
+msgstr "Añadir Región"
+
+msgid "Name of Region"
+msgstr "Nombre de la Región"
+
+msgid "Delete Selected Regions"
+msgstr "Eliminar Regiones Seleccionadas"
+
+msgid "Adding a tax per Kg, when the order is above max weight."
+msgstr ""
+"Se suma una tasa por cada Kg adicional que supere el peso máximo introducido "
+"en la tabla pincipal de gastos de envío"
