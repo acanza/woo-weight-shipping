@@ -734,6 +734,14 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 							$postCodeRange = range( $firstPostCode, $secondPostCode );
 						}
 						
+						//Rellena con cero a la izquierda si el CP tiene menos de 5 cifras
+						if( strlen( $postCodeRange[0] ) < 5 ){
+
+							foreach ( $postCodeRange as $pos => $zipCode ) {
+								$postCodeRange[$pos] = str_pad($zipCode, 5, '0', STR_PAD_LEFT);
+							}
+						}
+						
 						$finalPostCodeList = array_merge( $finalPostCodeList, $postCodeRange );
 					}else{
 					
