@@ -130,7 +130,12 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 						$max_rate = current( $values );
 						$max_weight = $max_rate[ 'weight' ];
 				
-						if( $total_weight > $max_weight ){
+						//Comprueba si a partir de cierto peso los gastos de envío son gratuitos.
+						if(( $total_weight > $max_weight ) && ( $max_rate[ 'cost' ] == 0 )){
+
+							$final_increase = 0;
+						}elseif ( $max_rate[ 'cost' ] > 0 ) {
+
 							$final_increase =  $max_rate[ 'cost' ] + ( ( $total_weight - $max_weight ) * $shippingCosts[ tax_per_kg ] );
 						}else{
 							$pos = 0;
@@ -612,9 +617,13 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			$key = key( $values );
 		
 			for ( $i = 0; $i <= $key; $i++ ) {
-				if ( isset( $order_weight[ $i ] ) && isset( $increase_cost[ $i ] ) ) {
+				if ( ( $order_weight[ $i ] >= 0 ) && ( $increase_cost[ $i ] >= 0 ) ) {
 	
-					$increase_cost[ $i ] = number_format($increase_cost[ $i ], 2,  '.', '');
+					//Añade dos decimales al coste en euros, excepto cuando el valor es 0
+					if ( $increase_cost[ $i ] > 0 ) {
+
+						$increase_cost[ $i ] = number_format($increase_cost[ $i ], 2,  '.', '');
+					}
 		
 					// Add to increae rates array
 					$increase_rates[ $i ] = array(
@@ -656,9 +665,14 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					$cont = 0;
 					for($i=0; $i<=$max; $i++){
 						
-						if( isset( $data[cost][$i] ) & ( $data[cost][$i] > 0 ) ){
+						if( isset( $data[cost][$i] ) & ( $data[cost][$i] >= 0 ) ){
 							$new_regions_list[ $region ][taxes][ $cont ] = array( 'weight' => $data[weight][$i], 'cost' => $data[cost][$i] );
 							$cont++;
+
+							//Se asegura de no almacenar más pares peso=>coste después de detectar envío gratuito a partir de un determinado peso.
+							if ( $data[cost][$i] == 0 ) {
+								break;
+							}
 						}
 					}
 				}
