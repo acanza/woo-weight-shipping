@@ -345,7 +345,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		
 								echo '<tr class="flat_rate">
 									<th class="check-column"><input type="checkbox" name="select" /></th>
-									<td><input type="number" step="1" min="0" value="' . esc_attr( $rate['weight'] ) . '" name="' . esc_attr( $this->id .'_weight[' . $i . ']' ) . '" placeholder="'.__( '0', 'wooweightshipping' ).'" size="4" /></td>
+									<td><input type="number" step="any" min="0" value="' . esc_attr( $rate['weight'] ) . '" name="' . esc_attr( $this->id .'_weight[' . $i . ']' ) . '" placeholder="'.__( '0', 'wooweightshipping' ).'" size="4" /></td>
 									<td><input type="number" step="any" min="0" value="' . esc_attr( $rate['cost'] ) . '" name="' . esc_attr( $this->id .'_cost[' . $i . ']' ) . '" placeholder="'.__( '0.00', 'wooweightshipping' ).'" size="4" /></td>
 									</tr>';
 							}
@@ -457,7 +457,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		
 										echo '<tr class="flat_rate">
 											<th class="check-column"><input type="checkbox" name="select" /></th>
-											<td><input type="number" step="1" min="0" value="' . esc_attr( $value[ weight ] ) . '" name="' . esc_attr( $this->id .'_regions['. $i .'][weight]['. $j .']' ) . '" placeholder="'.__( '0', 'wooweightshipping' ).'" size="4" /></td>
+											<td><input type="number" step="any" min="0" value="' . esc_attr( $value[ weight ] ) . '" name="' . esc_attr( $this->id .'_regions['. $i .'][weight]['. $j .']' ) . '" placeholder="'.__( '0', 'wooweightshipping' ).'" size="4" /></td>
 											<td><input type="number" step="any" min="0" value="' . esc_attr( $value[ cost ] ) . '" name="' . esc_attr( $this->id .'_regions['. $i .'][cost]['. $j .']' ) . '" placeholder="'.__( '0.00', 'wooweightshipping' ).'" size="4" /></td>
 											</tr>';
 									}					
