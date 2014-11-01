@@ -3,7 +3,7 @@
 Plugin Name: Woo Weight Shipping
 Plugin URI: https://github.com/acanza/woo-weight-shipping
 Description: Woo Weight Shipping is a WooCommerce add-on which allow you setting up shipping rate depend on the weight of purchase and customer post code.
-Version: 1.0
+Version: 1.0.2
 Author: Woodemia
 Author URI: http://woodemia.com
 License: GPL2
@@ -123,64 +123,11 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					$shippingCosts = $this->special_increase_rates[ $regionID ];
 					$values = $shippingCosts[ taxes ];
 					
-					if( $values ){
-					
-						// Get max weight of table
-						$value = end( $values );
-						$max_rate = current( $values );
-						$max_weight = $max_rate[ 'weight' ];
-				
-						//Comprueba si a partir de cierto peso los gastos de envío son gratuitos.
-						if(( $total_weight > $max_weight ) && ( $max_rate[ 'cost' ] == 0 )){
-
-							$final_increase = 0;
-						}elseif ( $max_rate[ 'cost' ] > 0 ) {
-
-							$final_increase =  $max_rate[ 'cost' ] + ( ( $total_weight - $max_weight ) * $shippingCosts[ tax_per_kg ] );
-						}else{
-							$pos = 0;
-							foreach( $shippingCosts[ taxes ] as $key => $rate ){
-								if( $total_weight <= $rate[ 'weight' ] ){
-									
-									if( $pos == 0 ) $pos++;
-									$final_increase = $shippingCosts[ taxes ][ $pos-1 ][ 'cost' ];
-									break;
-								}
-
-								$pos++;
-							}	
-						}	
-					}
+					$final_increase = $this->get_shipping_cost( $shippingCosts, $values, $total_weight, true);
 				}else{
+
 					$values = $this->increase_rates;
-					
-					if( $values ){
-					
-						// Get max weight of table
-						ksort( $values );
-						$value = end( $values );
-						$max_rate = current( $values );
-						$max_weight = $max_rate[ 'weight' ];
-					
-						if( $total_weight > $max_weight ){
-							$final_increase =  $max_rate[ 'cost' ] + ( ( $total_weight - $max_weight ) * $this->tax_per_kg );
-						}else{
-							$count = 0;
-							foreach( $this->increase_rates as $key => $rate ){
-								
-								if( $total_weight <= $rate[ 'weight' ] ){
-									
-									if( $count == 0 ) $count++;
-									$increaseRate = $this->increase_rates[ $count-1 ];
-									
-									$final_increase = $increaseRate[ 'cost' ];
-									break;
-								}
-								
-								$count++;
-							}	
-						}	
-					}
+					$final_increase = $this->get_shipping_cost( $this->increase_rates, $values, $total_weight);
 				}
 				
 				//#########################################################################
@@ -198,6 +145,68 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
 				if ( isset( $rate ) )
 					$this->add_rate( $rate );
+		}
+
+		/**
+		* Get the shipping cost depending on whether is special region or not
+		*/
+		function get_shipping_cost( $shipping_table, $values, $total_weight, $is_special_region = false){
+
+			$final_increase = 0;
+
+			if ( $values ) {
+
+				// Get max weight of table
+				ksort( $values );
+				$value = end( $values );
+				$max_rate = current( $values );
+				$max_weight = $max_rate[ 'weight' ];
+
+				//Checking if shipping is free from max weight
+				if(( $total_weight > $max_weight ) && ( $max_rate[ 'cost' ] == 0 )){
+
+					$final_increase = 0;
+				}elseif(( $total_weight > $max_weight ) && ( $max_rate[ 'cost' ] > 0 )) {
+
+					$above_weight = $total_weight - $max_weight;
+					if ( 1 > $above_weight ) {
+
+						$final_increase =  $max_rate[ 'cost' ];
+					}else{
+
+						$final_increase =  $max_rate[ 'cost' ] + ( floor( $above_weight ) * $shipping_table[ tax_per_kg ] );
+					}
+				}elseif( ( $total_weight < $max_weight ) && $is_special_region ){
+
+					$pos = 0;
+					foreach( $shipping_table[ taxes ] as $key => $rate ){
+						if( $total_weight < $rate[ 'weight' ] ){
+
+							if( $pos == 0 ) $pos++;
+							$final_increase = $shipping_table[ taxes ][ $pos-1 ][ 'cost' ];
+							break;
+						}
+
+						$pos++;
+					}	
+				}elseif( ( $total_weight < $max_weight ) && !$is_special_region ){
+
+					$pos = 0;
+					foreach( $shipping_table as $key => $rate ){
+
+						if( $total_weight < $rate[ 'weight' ] ){
+
+							if( $pos == 0 ) $pos++;
+							$final_increase = $shipping_table[ $pos-1 ][ 'cost' ];
+							break;
+						}
+
+						$pos++;
+					}
+				}
+			}
+
+			return $final_increase;
 		}
 		
 		/**
