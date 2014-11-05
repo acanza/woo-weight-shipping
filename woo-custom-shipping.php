@@ -9,6 +9,10 @@ Author URI: http://woodemia.com
 License: GPL2
 */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly
+}
+
 // Derive the current path and load up WooCommerce
 if(class_exists('Woocommerce') != true)
 	require_once(WP_PLUGIN_DIR.'/woocommerce/woocommerce.php');
@@ -44,6 +48,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_increase_rates' ) );
 			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_special_regions_rates' ) );
 			add_filter( 'woocommerce_settings_api_sanitized_fields_' . $this->id, array( $this, 'save_default_data' ) );
+			add_shortcode( 'woo_weight_shipping_debug', array( $this, 'debug_shortcode' ) );
 			
 			$this->init();
 		}
@@ -107,11 +112,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			$final_increase = 0;
 			$regionID = NULL;
 			
-			$this->rates 		= array();
+			$this->rates = array();
 
 			if ( $this->type == 'order' ) {
-
-				$shipping_total = $this->order_shipping( $package );
 				
 				//Get total weight of package
 				$total_weight = $this->get_package_weight( $package );
@@ -121,87 +124,67 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 				if ( isset( $regionID ) ) {
 					
 					$shippingCosts = $this->special_increase_rates[ $regionID ];
-					$values = $shippingCosts[ taxes ];
-					
-					$final_increase = $this->get_shipping_cost( $shippingCosts, $values, $total_weight, true);
+					$final_increase = $this->get_shipping_cost( $shippingCosts[ taxes ], $shippingCosts[ tax_per_kg ], $total_weight, true);
 				}else{
 
-					$values = $this->increase_rates;
-					$final_increase = $this->get_shipping_cost( $this->increase_rates, $values, $total_weight);
+					$final_increase = $this->get_shipping_cost( $this->increase_rates, $this->tax_per_kg, $total_weight);
 				}
 				
 				//#########################################################################
 				//$this->final_increase_rate = $final_increase;
 				//#########################################################################
 
-				if ( ! is_null( $shipping_total ) )
+				if ( ! is_null( $final_increase ) )
 				$rate = array(
 					'id' 	=> $this->id,
 					'label' => $this->title,
 					'cost' 	=> $final_increase
 				);
-
 			}
 
-				if ( isset( $rate ) )
-					$this->add_rate( $rate );
+			if ( isset( $rate ) )
+				$this->add_rate( $rate );
 		}
 
 		/**
-		* Get the shipping cost depending on whether is special region or not
+		* Get the shipping cost
 		*/
-		function get_shipping_cost( $shipping_table, $values, $total_weight, $is_special_region = false){
+		function get_shipping_cost( $shipping_table, $tax_per_kg, $total_weight, $special_region = false ){
 
 			$final_increase = 0;
 
-			if ( $values ) {
+			if ( $shipping_table ) {
 
 				// Get max weight of table
-				ksort( $values );
-				$value = end( $values );
-				$max_rate = current( $values );
-				$max_weight = $max_rate[ 'weight' ];
+				ksort( $shipping_table );
+				$value = end( $shipping_table );
+				$max_rate = current( $shipping_table );
+				reset( $shipping_table );
+				$max_weight = $max_rate[ weight ];
 
 				//Checking if shipping is free from max weight
-				if(( $total_weight > $max_weight ) && ( $max_rate[ 'cost' ] == 0 )){
+				if(( $total_weight > $max_weight ) && ( $max_rate[ cost ] == 0 )){
 
 					$final_increase = 0;
-				}elseif(( $total_weight > $max_weight ) && ( $max_rate[ 'cost' ] > 0 )) {
+				}elseif(( $total_weight > $max_weight ) && ( $max_rate[ cost ] > 0 )) {
 
 					$above_weight = $total_weight - $max_weight;
 					if ( 1 > $above_weight ) {
 
-						$final_increase =  $max_rate[ 'cost' ];
+						$final_increase =  $max_rate[ cost ];
 					}else{
 
-						$final_increase =  $max_rate[ 'cost' ] + ( floor( $above_weight ) * $shipping_table[ tax_per_kg ] );
+						$final_increase =  $max_rate[ cost ] + ( floor( $above_weight ) * $tax_per_kg );
 					}
-				}elseif( ( $total_weight < $max_weight ) && $is_special_region ){
+				}elseif( ( $total_weight <= $max_weight )){
 
-					$pos = 0;
-					foreach( $shipping_table[ taxes ] as $key => $rate ){
-						if( $total_weight < $rate[ 'weight' ] ){
-
-							if( $pos == 0 ) $pos++;
-							$final_increase = $shipping_table[ taxes ][ $pos-1 ][ 'cost' ];
-							break;
-						}
-
-						$pos++;
-					}	
-				}elseif( ( $total_weight < $max_weight ) && !$is_special_region ){
-
-					$pos = 0;
 					foreach( $shipping_table as $key => $rate ){
 
-						if( $total_weight < $rate[ 'weight' ] ){
+						if( $total_weight <= $rate[ weight ] ){
 
-							if( $pos == 0 ) $pos++;
-							$final_increase = $shipping_table[ $pos-1 ][ 'cost' ];
+							$final_increase = $rate[ cost ];
 							break;
 						}
-
-						$pos++;
 					}
 				}
 			}
@@ -839,6 +822,21 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 				endif;
 
 			return apply_filters( 'woocommerce_shipping_' . $this->id . '_is_available', true );
+		}
+
+		/**
+		* Create a shortcode to print data. Debug only
+		*/
+		function debug_shortcode(){
+
+			echo '<br><p>Post para depurar el código</p><br>';
+			echo '<p>Tabla principal = ';
+			var_dump( $this->increase_rates );
+			echo '</p><br>';
+
+			echo '<p>Tabla Regiones Especiales = ';
+			$this->get_special_increase_rates();
+			var_dump ( $this->special_increase_rates );
 		}
 	}
 	
