@@ -3,7 +3,7 @@
 Plugin Name: Woo Weight Shipping
 Plugin URI: https://github.com/acanza/woo-weight-shipping
 Description: Woo Weight Shipping is a WooCommerce add-on which allow you setting up shipping rate depend on the weight of purchase and customer post code.
-Version: 1.1.0
+Version: 1.1.1
 Author: Woodemia
 Author URI: http://woodemia.com
 License: GPL2
@@ -114,32 +114,42 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			
 			$this->rates = array();
 
-			if ( $this->type == 'order' ) {
-				
-				//Get total weight of package
-				$total_weight = $this->get_package_weight( $package );
-				
-				$regionID = $this->is_special_region( $package[ 'destination' ][ 'postcode' ] );
-				
-				if ( isset( $regionID ) ) {
-					
-					$shippingCosts = $this->special_increase_rates[ $regionID ];
-					$final_increase = $this->get_shipping_cost( $shippingCosts[ taxes ], $shippingCosts[ tax_per_kg ], $total_weight, true);
-				}else{
+			//Get total weight of package
+			$total_weight = $this->get_package_weight( $package );
 
-					$final_increase = $this->get_shipping_cost( $this->increase_rates, $this->tax_per_kg, $total_weight);
-				}
-				
+			if ( $total_weight > 0 ) {
+
+				if ( $this->type == 'order' ) {
+
+					$regionID = $this->is_special_region( $package[ 'destination' ][ 'postcode' ] );
+
+					if ( isset( $regionID ) ) {
+
+						$shippingCosts = $this->special_increase_rates[ $regionID ];
+						$final_increase = $this->get_shipping_cost( $shippingCosts[ taxes ], $shippingCosts[ tax_per_kg ], $total_weight, true);
+					}else{
+
+						$final_increase = $this->get_shipping_cost( $this->increase_rates, $this->tax_per_kg, $total_weight);
+					}
+
 				//#########################################################################
 				//$this->final_increase_rate = $final_increase;
 				//#########################################################################
 
-				if ( ! is_null( $final_increase ) )
+					if ( ! is_null( $final_increase ) )
+						$rate = array(
+							'id' 	=> $this->id,
+							'label' => $this->title,
+							'cost' 	=> $final_increase
+							);
+				}
+			}else{
+
 				$rate = array(
 					'id' 	=> $this->id,
 					'label' => $this->title,
-					'cost' 	=> $final_increase
-				);
+					'cost' 	=> 0
+					);
 			}
 
 			if ( isset( $rate ) )
