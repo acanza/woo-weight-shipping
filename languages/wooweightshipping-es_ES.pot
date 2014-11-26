@@ -2,20 +2,21 @@
 # This file is distributed under the same license as the WordPress Importer package.
 msgid ""
 msgstr ""
-"Project-Id-Version: Optingram 1.0\n"
+"Project-Id-Version: Woo Weight Shipping 1.1.2\n"
 "Report-Msgid-Bugs-To: http://wordpress.org/tag/wordpress-importer\n"
 "POT-Creation-Date: 2011-07-16 15:45:12+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2014-06-16 19:19+0100\n"
-"Last-Translator: Antonio Cantero <cantero.zamorano@gmail.com>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"X-Generator: Poedit 1.5.5\n"
+"PO-Revision-Date: 2014-11-26 13:30+0100\n"
+"Last-Translator: Antonio Cantero <soporte@woodemia.com>\n"
+"Language-Team: Woodemia <soporte@woodemia.com>\n"
+"X-Generator: Poedit 1.6.10\n"
+"Language: es_ES\n"
 
 #. Plugin Name of the plugin/theme
 msgid "Woo Weight Shipping"
-msgstr ""
+msgstr "Woo Weight Shipping"
 
 msgid "Cost per additional Kg"
 msgstr "Coste por Kg adicional"
@@ -26,8 +27,11 @@ msgstr "Tabla principal de gastos de envío "
 msgid "Delivery costs depending on the order weight."
 msgstr "Los gastos de envío dependen del peso del pedido."
 
-msgid "From [X] Kg"
-msgstr "Desde [X] Kg"
+msgid "Up to [X] Kg"
+msgstr "Hasta [X] Kg"
+
+msgid "Cost"
+msgstr "Coste"
 
 msgid "Any weight"
 msgstr "Cualquier peso"

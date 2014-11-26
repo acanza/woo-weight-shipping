@@ -26,7 +26,7 @@ msgstr ""
 msgid "Delivery costs depending on the order weight."
 msgstr ""
 
-msgid "From [X] Kg"
+msgid "Up to [X] Kg"
 msgstr ""
 
 msgid "Any weight"

@@ -3,7 +3,7 @@
 Plugin Name: Woo Weight Shipping
 Plugin URI: https://github.com/acanza/woo-weight-shipping
 Description: Woo Weight Shipping is a WooCommerce add-on which allow you setting up shipping rate depend on the weight of purchase and customer post code.
-Version: 1.1.1
+Version: 1.1.2
 Author: Woodemia
 Author URI: http://woodemia.com
 License: GPL2
@@ -324,8 +324,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 						<thead>
 							<tr>
 								<th class="check-column"><input type="checkbox"></th>
-								<th class="shipping_class"><?php _e( 'From [X] Kg', 'wooweightshipping' ); ?></th>
-							<th><?php _e( 'Cost', 'wooweightshipping' ); ?> <a class="tips" data-tip="<?php _e( 'Cost, excluding tax.', 'wooweightshipping' ); ?>">[?]</a></th>
+								<th class="shipping_class"><?php _e( 'Up to [X] Kg', 'wooweightshipping' ); ?></th>
+								<th><?php _e( 'Cost', 'woocommerce' ); ?> <a class="tips" data-tip="<?php _e( 'Cost, excluding tax.', 'woocommerce' ); ?>"> [?]</a></th>
 							</tr>
 						</thead>
 						<tfoot>
@@ -442,8 +442,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 															<thead>
 																<tr>
 																	<th class="check-column"><input type="checkbox"></th>
-																	<th class="shipping_class">'. __( 'From [X] Kg', 'wooweightshipping' ) .'</th>
-																	<th>'. __( "Cost", "woocommerce" ) .'<a class="tips" data-tip="'. __( "Cost, excluding tax.", "woocommerce" ) .'">[&euro;]</a></th>
+																	<th class="shipping_class">'. __( 'Up to [X] Kg', 'wooweightshipping' ) .'</th>
+																	<th>'. __( "Cost", "woocommerce" ) .'<a class="tips" data-tip="'. __( "Cost, excluding tax.", "woocommerce" ) .'"> [?]</a></th>
 																</tr>
 															</thead>
 															<tfoot>
@@ -533,7 +533,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 															<table class="shippingrows widefat" cellspacing="0">\
 																<thead>\
 																	<tr>\
-																		<th class="shipping_class"><?php echo __( 'From [X] Kg', 'wooweightshipping' ); ?></th>\
+																		<th class="shipping_class"><?php echo __( 'Up to [X] Kg', 'wooweightshipping' ); ?></th>\
 																		<th><?php echo __( 'Cost', 'wooweightshipping' ); ?> <a class="tips" data-tip="<?php echo __( 'Cost, excluding tax.', 'wooweightshipping' ); ?>">[&euro;]</a></th>\
 																	</tr>\
 																</thead>\
