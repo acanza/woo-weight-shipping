@@ -3,7 +3,7 @@
 Plugin Name: Woo Weight Shipping
 Plugin URI: https://github.com/acanza/woo-weight-shipping
 Description: Woo Weight Shipping is a WooCommerce add-on which allow you setting up shipping rate depend on the weight of purchase and customer post code.
-Version: 1.1.2
+Version: 1.2.0
 Author: Woodemia
 Author URI: http://woodemia.com
 License: GPL2
@@ -42,10 +42,12 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			$this->id = 'increase_rate';
 			$this->method_title = __( 'Woo Weight Shipping', 'wooweightshipping' );
 			$this->increase_rate_option = 'woocommerce_increase_rates';
+			$this->flat_rate_option = 'woocommerce_classes_increase_rates';
 			$this->special_increase_rate_option = 'woocommerce_special_increase_rate';
 			
 			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_admin_options' ) );
 			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_increase_rates' ) );
+			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_flat_rates' ) );
 			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_special_regions_rates' ) );
 			add_filter( 'woocommerce_settings_api_sanitized_fields_' . $this->id, array( $this, 'save_default_data' ) );
 			add_shortcode( 'woo_weight_shipping_debug', array( $this, 'debug_shortcode' ) );
@@ -75,6 +77,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			
 			// Load Special Increase Rates
 			$this->get_special_increase_rates();
+
+			// Load Class Rates
+			$this->get_flat_rates();
 		}
 	
 		/*
@@ -119,29 +124,32 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
 			if ( $total_weight > 0 ) {
 
+				$regionID = $this->is_special_region( $package[ 'destination' ][ 'postcode' ] );
+
+				if ( isset( $regionID ) ) {
+
+					$shippingCosts = $this->special_increase_rates[ $regionID ];
+					$final_increase = $this->get_shipping_cost( $shippingCosts[ taxes ], $shippingCosts[ tax_per_kg ], $total_weight, true);
+				}else{
+
+					$final_increase = $this->get_shipping_cost( $this->increase_rates, $this->tax_per_kg, $total_weight);
+				}
+
 				if ( $this->type == 'order' ) {
 
-					$regionID = $this->is_special_region( $package[ 'destination' ][ 'postcode' ] );
+					$rate = array(
+						'id' 	=> $this->id,
+						'label' => $this->title,
+						'cost' 	=> $final_increase
+						);
+				} elseif( $this->type == 'class' ){
 
-					if ( isset( $regionID ) ) {
-
-						$shippingCosts = $this->special_increase_rates[ $regionID ];
-						$final_increase = $this->get_shipping_cost( $shippingCosts[ taxes ], $shippingCosts[ tax_per_kg ], $total_weight, true);
-					}else{
-
-						$final_increase = $this->get_shipping_cost( $this->increase_rates, $this->tax_per_kg, $total_weight);
-					}
-
-				//#########################################################################
-				//$this->final_increase_rate = $final_increase;
-				//#########################################################################
-
-					if ( ! is_null( $final_increase ) )
-						$rate = array(
-							'id' 	=> $this->id,
-							'label' => $this->title,
-							'cost' 	=> $final_increase
-							);
+					$classShippingTotal = $this->class_shipping( $package );
+					$rate = array(
+						'id' 	=> $this->id,
+						'label' => $this->title,
+						'cost' 	=> $classShippingTotal + $final_increase
+						);
 				}
 			}else{
 
@@ -221,7 +229,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			return $total_weight;
 		}
 		
-		 /**
+		/**
 		* Initialise Gateway Settings Form Fields
 		*/
 		function init_form_fields() {
@@ -268,14 +276,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 								'none' 		=> __( 'None', 'woocommerce' )
 							)
 						),
-			'type' => array(
-							'title' 		=> __( 'Cost Added...', 'woocommerce' ),
-							'type' 			=> 'select',
-							'default' 		=> 'order',
-							'options' 		=> array(
-								'order' 	=> __( 'Per Order - charge shipping for the entire order as a whole', 'woocommerce' )
-							),
-						),
 			'tax_per_kg' => array(
 							'title' 		=> __( 'Cost per additional Kg', 'wooweightshipping' ),
 							'type' 			=> 'number',
@@ -303,7 +303,24 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					       ),
 			'delivery_special_rate_table' => array(
 							'type'		=> 'delivery_special_rate_table'
-							)
+							),
+			'additional_costs' => array(
+							'title'			=> __( 'Additional Costs', 'woocommerce' ),
+							'type'			=> 'title',
+							'description'   => __( 'Additional costs can be added below - these will all be added to the per-order cost above.', 'woocommerce' )
+						),
+			'type' => array(
+							'title' 		=> __( 'Costs Added...', 'woocommerce' ),
+							'type' 			=> 'select',
+							'default' 		=> 'order',
+							'options' 		=> array(
+								'order' 	=> __( 'Per Order - charge shipping for the entire order as a whole', 'woocommerce' ),
+								'class' 	=> __( 'Per Class - charge shipping for each shipping class in an order', 'woocommerce' ),
+							),
+						),
+			'additional_costs_table' => array(
+						'type'				=> 'additional_costs_table'
+						)
 			);
 		} // End init_form_fields()
 		
@@ -319,7 +336,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			?>
 			<tr valign="top">
 			<th scope="row" class="titledesc"><?php _e( 'Costs', 'wooweightshipping' ); ?>:</th>
-			<td class="forminp" id="<?php echo $this->id; ?>_flat_rates">
+			<td class="forminp" id="<?php echo $this->id; ?>_delivery_rates">
 					<table class="shippingrows widefat" cellspacing="0">
 						<thead>
 							<tr>
@@ -347,8 +364,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		
 								echo '<tr class="flat_rate">
 									<th class="check-column"><input type="checkbox" name="select" /></th>
-									<td><input type="number" step="any" min="0" value="' . esc_attr( $rate['weight'] ) . '" name="' . esc_attr( $this->id .'_weight[' . $i . ']' ) . '" placeholder="'.__( '0', 'wooweightshipping' ).'" size="4" /></td>
-									<td><input type="number" step="any" min="0" value="' . esc_attr( $rate['cost'] ) . '" name="' . esc_attr( $this->id .'_cost[' . $i . ']' ) . '" placeholder="'.__( '0.00', 'wooweightshipping' ).'" size="4" /></td>
+									<td><input type="number" step="any" min="0" value="' . esc_attr( $rate['weight'] ) . '" name="' . esc_attr( $this->id .'_shipping_weight[' . $i . ']' ) . '" placeholder="'.__( '0', 'wooweightshipping' ).'" size="4" /></td>
+									<td><input type="number" step="any" min="0" value="' . esc_attr( $rate['cost'] ) . '" name="' . esc_attr( $this->id .'_shipping_cost[' . $i . ']' ) . '" placeholder="'.__( '0.00', 'wooweightshipping' ).'" size="4" /></td>
 									</tr>';
 							}
 						}
@@ -358,23 +375,23 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					<script type="text/javascript">
 							jQuery(function() {
 	
-								jQuery('#<?php echo $this->id; ?>_flat_rates').on( 'click', 'a.add', function(){
+								jQuery('#<?php echo $this->id; ?>_delivery_rates').on( 'click', 'a.add', function(){
 
-									var size = jQuery('#<?php echo $this->id; ?>_flat_rates tbody .flat_rate').size();
+									var size = jQuery('#<?php echo $this->id; ?>_delivery_rates tbody .flat_rate').size();
 
 									jQuery('<tr class="flat_rate">\
-										<th class="check-column"><input type="checkbox" name="select" /></th>\<td><input type="number" step="any" min="0" name="<?php echo $this->id; ?>_weight[' + size + ']" placeholder="0.00" size="4" /></td>\
-										<td><input type="number" step="any" min="0" name="<?php echo $this->id; ?>_cost[' + size + ']" placeholder="0.00" size="4" /></td>\
-										</tr>').appendTo('#<?php echo $this->id; ?>_flat_rates table tbody');
+										<th class="check-column"><input type="checkbox" name="select" /></th>\<td><input type="number" step="any" min="0" name="<?php echo $this->id; ?>_shipping_weight[' + size + ']" placeholder="0.00" size="4" /></td>\
+										<td><input type="number" step="any" min="0" name="<?php echo $this->id; ?>_shipping_cost[' + size + ']" placeholder="0.00" size="4" /></td>\
+										</tr>').appendTo('#<?php echo $this->id; ?>_delivery_rates table tbody');
 	
 									return false;
 								});
 
 								// Remove row
-								jQuery('#<?php echo $this->id; ?>_flat_rates').on( 'click', 'a.remove', function(){
+								jQuery('#<?php echo $this->id; ?>_delivery_rates').on( 'click', 'a.remove', function(){
 									var answer = confirm("<?php _e( 'Delete the selected rates?', 'wooweightshipping' ); ?>")
 									if (answer) {
-										jQuery('#<?php echo $this->id; ?>_flat_rates table tbody tr th.check-column input:checked').each(function(i, el){
+										jQuery('#<?php echo $this->id; ?>_delivery_rates table tbody tr th.check-column input:checked').each(function(i, el){
 											jQuery(el).closest('tr').remove();
 										});
 									}
@@ -596,7 +613,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			<?php
 			return ob_get_clean();
 		}
-		
+
 		/**
 		* process_increase_rates function.
 		*
@@ -609,8 +626,8 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			$increase_cost = array();
 			$increase_rates = array();
 		
-			if ( isset( $_POST[ $this->id . '_weight'] ) )  $order_weight  = array_map( 'woocommerce_clean', $_POST[ $this->id . '_weight'] );
-			if ( isset( $_POST[ $this->id . '_cost'] ) )   $increase_cost   = array_map( 'woocommerce_clean', $_POST[ $this->id . '_cost'] );
+			if ( isset( $_POST[ $this->id . '_shipping_weight'] ) )  $order_weight  = array_map( 'woocommerce_clean', $_POST[ $this->id . '_shipping_weight'] );
+			if ( isset( $_POST[ $this->id . '_shipping_cost'] ) )   $increase_cost   = array_map( 'woocommerce_clean', $_POST[ $this->id . '_shipping_cost'] );
 
 			// Get max key
 			$values = $order_weight;
