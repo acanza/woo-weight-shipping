@@ -625,7 +625,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			$order_weight = array();
 			$increase_cost = array();
 			$increase_rates = array();
-		
+
 			if ( isset( $_POST[ $this->id . '_shipping_weight'] ) )  $order_weight  = array_map( 'woocommerce_clean', $_POST[ $this->id . '_shipping_weight'] );
 			if ( isset( $_POST[ $this->id . '_shipping_cost'] ) )   $increase_cost   = array_map( 'woocommerce_clean', $_POST[ $this->id . '_shipping_cost'] );
 
@@ -634,26 +634,30 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			ksort( $values );
 			$value = end( $values );
 			$key = key( $values );
-		
-			for ( $i = 0; $i <= $key; $i++ ) {
-				if ( ( $order_weight[ $i ] >= 0 ) && ( $increase_cost[ $i ] >= 0 ) ) {
-	
-					//Añade dos decimales al coste en euros, excepto cuando el valor es 0
-					if ( $increase_cost[ $i ] > 0 ) {
 
-						$increase_cost[ $i ] = number_format($increase_cost[ $i ], 2,  '.', '');
-					}
-		
+			for ( $i = 0; $i <= $key; $i++ ) {
+
+				if ( ( $order_weight[ $i ] !=='' ) || ( $increase_cost[ $i ] !=='' ) ) {
+
+					if ( ( $order_weight[ $i ] >= 0 ) && ( $increase_cost[ $i ] >= 0 ) ) {
+
+					//Añade dos decimales al coste en euros, excepto cuando el valor es 0
+						if ( $increase_cost[ $i ] > 0 ) {
+
+							$increase_cost[ $i ] = number_format($increase_cost[ $i ], 2,  '.', '');
+						}
+
 					// Add to increae rates array
-					$increase_rates[ $i ] = array(
-						'weight' => $order_weight[ $i ],
-						'cost'  => $increase_cost[ $i ],
-					);
+						$increase_rates[ $i ] = array(
+							'weight' => $order_weight[ $i ],
+							'cost'  => $increase_cost[ $i ],
+							);
+					}
 				}
 			}
-	
+
 			update_option( $this->increase_rate_option, $increase_rates );
-	
+
 			$this->get_increase_rates();
 		}
 		
@@ -684,22 +688,24 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 					$cont = 0;
 					for($i=0; $i<=$max; $i++){
 						
-						if( isset( $data[cost][$i] ) & ( $data[cost][$i] >= 0 ) ){
-							$new_regions_list[ $region ][taxes][ $cont ] = array( 'weight' => $data[weight][$i], 'cost' => $data[cost][$i] );
-							$cont++;
+						if ( ( $data[cost][$i] !=='' ) || ( $data[weight][$i] !=='' ) ) {
 
-							//Se asegura de no almacenar más pares peso=>coste después de detectar envío gratuito a partir de un determinado peso.
-							if ( $data[cost][$i] == 0 ) {
-								break;
+							if( isset( $data[cost][$i] ) & ( $data[cost][$i] >= 0 ) ){
+
+								$new_regions_list[ $region ][taxes][ $cont ] = array( 'weight' => $data[weight][$i], 'cost' => $data[cost][$i] );
+								$cont++;
+
+								//Se asegura de no almacenar más pares peso=>coste después de detectar envío gratuito a partir de un determinado peso.
+								if ( $data[cost][$i] == 0 ) {
+									break;
+								}
 							}
 						}
 					}
 				}
 			}
 			
-			$special_increase_rates = $new_regions_list;
-			
-			update_option( $this->special_increase_rate_option, $special_increase_rates );
+			update_option( $this->special_increase_rate_option, $new_regions_list );
 			
 			$this->get_special_increase_rates();
 		}
