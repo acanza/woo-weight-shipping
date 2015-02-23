@@ -3,7 +3,7 @@
 Plugin Name: Woo Weight Shipping
 Plugin URI: https://github.com/acanza/woo-weight-shipping
 Description: Woo Weight Shipping is a WooCommerce add-on which allow you setting up shipping rate depend on the weight of purchase and customer post code.
-Version: 1.2.0
+Version: 1.2.1
 Author: Woodemia
 Author URI: http://woodemia.com
 License: GPL2
@@ -20,7 +20,7 @@ if(class_exists('Woocommerce') != true)
 /**
  * Check if WooCommerce is active
  **/
-if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
+if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) return;
    
    
 	class WooWeightShipping extends WC_Shipping_Flat_Rate{
@@ -28,13 +28,13 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		/*
 		 *	Some required plugin information
 		*/
-		var $version = '1.0';
+		var $version = '1.2.1';
 
 	
 		/*
 		 *	Required __construct() function that initalizes the WooWeightShipping
 		*/
-		function __construct() {
+		public function __construct() {
 
 			//Register plugin text domain for translations files
 			load_plugin_textdomain( 'wooweightshipping', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
@@ -49,7 +49,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_increase_rates' ) );
 			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_flat_rates' ) );
 			add_action( 'woocommerce_update_options_shipping_' . $this->id, array( $this, 'process_special_regions_rates' ) );
-			add_filter( 'woocommerce_settings_api_sanitized_fields_' . $this->id, array( $this, 'save_default_data' ) );
 			add_shortcode( 'woo_weight_shipping_debug', array( $this, 'debug_shortcode' ) );
 			
 			$this->init();
@@ -58,7 +57,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		/*
 		 *	init function
 		*/
-		function init() {
+		public function init() {
 		
 			$this->init_form_fields();
 			$this->init_settings();
@@ -68,6 +67,7 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			$this->availability   = $this->get_option( 'availability' );
 			$this->countries 	  = $this->get_option( 'countries' );
 			$this->type 		  = $this->get_option( 'type' );
+			$this->cost 		  = $this->get_option( 'cost' );
 			$this->tax_status	  = $this->get_option( 'tax_status' );
 			$this->tax_per_kg    = $this->get_option( 'tax_per_kg' );
 			$this->increase = $this->get_option( 'increase' );
@@ -109,8 +109,110 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			# Uncomment the following line to see the function in action
 			# exit( var_dump( $_GET ) );
 		}
-	
-		
+
+		/**
+		* Initialise Gateway Settings Form Fields
+		*/
+		function init_form_fields() {
+			global $woocommerce;
+			
+			$this->form_fields = array(
+			'enabled' => array(
+							'title' 		=> __( 'Enable/Disable', 'woocommerce' ),
+							'type' 			=> 'checkbox',
+							'label' 		=> __( 'Enable this shipping method', 'woocommerce' ),
+							'default' 		=> 'no'
+						),
+			'title' => array(
+							'title' 		=> __( 'Method Title', 'woocommerce' ),
+							'type' 			=> 'text',
+							'description' 	=> __( 'This controls the title which the user sees during checkout.', 'woocommerce' ),
+							'default'		=> __( 'Increase Delivery', 'woocommerce' ),
+							'desc_tip'      => true,
+						),
+			'availability' => array(
+							'title'			=> __( 'Availability', 'woocommerce' ),
+							'type'			=> 'select',
+							'class'         => 'availability wc-enhanced-select',
+							'default'		=> 'all',
+							'options'		=> array(
+								'including'		=> __( 'All allowed countries', 'woocommerce' ),
+								'excluding'		=> __( 'Excluding selected countries', 'woocommerce' ),
+							)
+						),
+			'countries' => array(
+							'title'			=> __( 'Countries', 'woocommerce' ),
+							'type'			=> 'multiselect',
+							'class'			=> 'wc-enhanced-select',
+							'css'			=> 'width: 450px;',
+							'default'		=> '',
+							'options'		=> $woocommerce->countries->countries,
+							'custom_attributes' => array(
+								'data-placeholder' => __( 'Select some countries', 'woocommerce' )
+							)
+						),
+			'tax_status' => array(
+							'title' 		=> __( 'Tax Status', 'woocommerce' ),
+							'type' 			=> 'select',
+							'default' 		=> 'taxable',
+							'options'		=> array(
+								'taxable' 	=> __( 'Taxable', 'woocommerce' ),
+								'none' 		=> __( 'None', 'woocommerce' )
+							)
+						),
+			'tax_per_kg' => array(
+							'title' 		=> __( 'Cost per additional Kg', 'wooweightshipping' ),
+							'type' 			=> 'number',
+							'custom_attributes' => array(
+								'step'	=> 'any',
+								'min'	=> '0'
+							),
+							'description'	=> __( 'Adding a tax per Kg, when the order is above max weight.', 'wooweightshipping' ),
+							'default' 		=> '',
+							'desc_tip'      => true,
+							'placeholder'	=> '0.00'
+						),
+			'table_of_costs' => array(
+							'title'         => __( 'Main shipping table rates', 'wooweightshipping' ),
+							'type'          => 'title',
+							'description'   => __( 'Delivery costs depending on the order weight.', 'wooweightshipping' )
+						),
+			'delivery_costs_table' => array(
+							'type'          => 'delivery_costs_table'
+						),
+			'special_rate' => array(
+							'title'         => __( 'Special shipping rates', 'wooweightshipping' ),
+							'type'          => 'title',
+							'description'   => __( 'Special shipping rates for some regions depending on the post codes.', 'wooweightshipping' )
+					       ),
+			'delivery_special_rate_table' => array(
+							'type'		=> 'delivery_special_rate_table'
+							),
+			'additional_costs' => array(
+							'title'			=> __( 'Additional Costs', 'woocommerce' ),
+							'type'			=> 'title',
+							'description'   => __( 'Additional costs can be added below - these will all be added to the per-order cost above.', 'woocommerce' )
+						),
+			'type' => array(
+							'title' 		=> __( 'Costs Added...', 'woocommerce' ),
+							'type' 			=> 'select',
+							'default' 		=> 'order',
+							'options' 		=> array(
+								'order' 	=> __( 'Per Order - charge shipping for the entire order as a whole', 'woocommerce' ),
+								'class' 	=> __( 'Per Class - charge shipping for each shipping class in an order', 'woocommerce' ),
+							),
+						),
+			'additional_costs_table' => array(
+						'type'				=> 'additional_costs_table'
+						)
+			);
+		} // End init_form_fields()
+
+		/**
+	 	* calculate_shipping function.
+	 	*
+	 	* @param array $package (default: array())
+	 	*/
 		function calculate_shipping( $package = array() ) {
 			global $woocommerce;
 			$total_weight = 0;
@@ -228,101 +330,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
 			return $total_weight;
 		}
-		
-		/**
-		* Initialise Gateway Settings Form Fields
-		*/
-		function init_form_fields() {
-			global $woocommerce;
-			
-			$this->form_fields = array(
-			'enabled' => array(
-							'title' 		=> __( 'Enable/Disable', 'woocommerce' ),
-							'type' 			=> 'checkbox',
-							'label' 		=> __( 'Enable this shipping method', 'woocommerce' ),
-							'default' 		=> 'no'
-						),
-			'title' => array(
-							'title' 		=> __( 'Method Title', 'woocommerce' ),
-							'type' 			=> 'text',
-							'description' 	=> __( 'This controls the title which the user sees during checkout.', 'woocommerce' ),
-							'default'		=> __( 'Increase Delivery', 'woocommerce' ),
-							'desc_tip'      => true,
-						),
-			'availability' => array(
-							'title' 		=> __( 'Availability', 'woocommerce' ),
-							'type' 			=> 'select',
-							'description' 	=> '',
-							'default' 		=> 'including',
-							'options' 		=> array(
-								'including' 	=> __( 'Selected countries', 'woocommerce' ),
-								'excluding' 	=> __( 'Excluding selected countries', 'woocommerce' ),
-							)
-						),
-			'countries' => array(
-							'title' 		=> __( 'Countries', 'woocommerce' ),
-							'type' 			=> 'multiselect',
-							'class'			=> 'chosen_select',
-							'css'			=> 'width: 450px;',
-							'default' 		=> '',
-							'options'		=> $woocommerce->countries->countries
-						),
-			'tax_status' => array(
-							'title' 		=> __( 'Tax Status', 'woocommerce' ),
-							'type' 			=> 'select',
-							'default' 		=> 'taxable',
-							'options'		=> array(
-								'taxable' 	=> __( 'Taxable', 'woocommerce' ),
-								'none' 		=> __( 'None', 'woocommerce' )
-							)
-						),
-			'tax_per_kg' => array(
-							'title' 		=> __( 'Cost per additional Kg', 'wooweightshipping' ),
-							'type' 			=> 'number',
-							'custom_attributes' => array(
-								'step'	=> 'any',
-								'min'	=> '0'
-							),
-							'description'	=> __( 'Adding a tax per Kg, when the order is above max weight.', 'wooweightshipping' ),
-							'default' 		=> '',
-							'desc_tip'      => true,
-							'placeholder'	=> '0.00'
-						),
-			'table_of_costs' => array(
-							'title'         => __( 'Main shipping table rates', 'wooweightshipping' ),
-							'type'          => 'title',
-							'description'   => __( 'Delivery costs depending on the order weight.', 'wooweightshipping' )
-						),
-			'delivery_costs_table' => array(
-							'type'          => 'delivery_costs_table'
-						),
-			'special_rate' => array(
-							'title'         => __( 'Special shipping rates', 'wooweightshipping' ),
-							'type'          => 'title',
-							'description'   => __( 'Special shipping rates for some regions depending on the post codes.', 'wooweightshipping' )
-					       ),
-			'delivery_special_rate_table' => array(
-							'type'		=> 'delivery_special_rate_table'
-							),
-			'additional_costs' => array(
-							'title'			=> __( 'Additional Costs', 'woocommerce' ),
-							'type'			=> 'title',
-							'description'   => __( 'Additional costs can be added below - these will all be added to the per-order cost above.', 'woocommerce' )
-						),
-			'type' => array(
-							'title' 		=> __( 'Costs Added...', 'woocommerce' ),
-							'type' 			=> 'select',
-							'default' 		=> 'order',
-							'options' 		=> array(
-								'order' 	=> __( 'Per Order - charge shipping for the entire order as a whole', 'woocommerce' ),
-								'class' 	=> __( 'Per Class - charge shipping for each shipping class in an order', 'woocommerce' ),
-							),
-						),
-			'additional_costs_table' => array(
-						'type'				=> 'additional_costs_table'
-						)
-			);
-		} // End init_form_fields()
 		
 		/**
 		* generate_delivery_costs_table_html function.
@@ -629,6 +636,9 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 			if ( isset( $_POST[ $this->id . '_shipping_weight'] ) )  $order_weight  = array_map( 'woocommerce_clean', $_POST[ $this->id . '_shipping_weight'] );
 			if ( isset( $_POST[ $this->id . '_shipping_cost'] ) )   $increase_cost   = array_map( 'woocommerce_clean', $_POST[ $this->id . '_shipping_cost'] );
 
+			// Check if $order_weight is empty before process data
+			if ( empty( $order_weight ) ) return;
+
 			// Get max key
 			$values = $order_weight;
 			ksort( $values );
@@ -794,21 +804,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		}
 		
 		/**
-		* save_default_data function.
-		*
-		* @access public
-		* @param mixed $values
-		* @return void
-		*/
-		function save_default_data( $fields ) {
-		 	$default_cost = woocommerce_clean( $_POST['default_cost'] );
-
-			$fields['cost']  = $default_cost;
-
-			return $fields;
-		}
-		
-		/**
 		* get_increase_rates function.
 		*
 		* @access public
@@ -863,13 +858,17 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 		function debug_shortcode(){
 
 			echo '<br><p>Post para depurar el código</p><br>';
-			echo '<p>Tabla principal = ';
+			echo '<p>Tabla principal = </p><pre>';
 			var_dump( $this->increase_rates );
-			echo '</p><br>';
+			echo '</pre><br>';
 
 			echo '<p>Tabla Regiones Especiales = ';
 			$this->get_special_increase_rates();
 			var_dump ( $this->special_increase_rates );
+
+			echo '<p>Listado de países = </p><pre>';
+			print_r( WC()->countries->get_shipping_countries() );
+			echo '</pre>';
 		}
 	}
 	
@@ -895,8 +894,6 @@ if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', g
 
 		add_filter('woocommerce_shipping_methods', 'add_increase_rate_method' );
 	}
-   
-}
 
 
 ?>
