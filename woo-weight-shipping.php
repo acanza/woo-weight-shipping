@@ -146,7 +146,7 @@ if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', 
 							'class'			=> 'wc-enhanced-select',
 							'css'			=> 'width: 450px;',
 							'default'		=> '',
-							'options'		=> $woocommerce->countries->countries,
+							'options'		=> array(),
 							'custom_attributes' => array(
 								'data-placeholder' => __( 'Select some countries', 'woocommerce' )
 							)
@@ -280,29 +280,29 @@ if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', 
 				$value = end( $shipping_table );
 				$max_rate = current( $shipping_table );
 				reset( $shipping_table );
-				$max_weight = $max_rate[ weight ];
+				$max_weight = $max_rate[ 'weight' ];
 
 				//Checking if shipping is free from max weight
-				if(( $total_weight > $max_weight ) && ( $max_rate[ cost ] == 0 )){
+				if(( $total_weight > $max_weight ) && ( $max_rate[ 'cost' ] == 0 )){
 
 					$final_increase = 0;
-				}elseif(( $total_weight > $max_weight ) && ( $max_rate[ cost ] > 0 )) {
+				}elseif(( $total_weight > $max_weight ) && ( $max_rate[ 'cost' ] > 0 )) {
 
 					$above_weight = $total_weight - $max_weight;
 					if ( 1 > $above_weight ) {
 
-						$final_increase =  $max_rate[ cost ];
+						$final_increase =  $max_rate[ 'cost' ];
 					}else{
 
-						$final_increase =  $max_rate[ cost ] + ( floor( $above_weight ) * $tax_per_kg );
+						$final_increase =  $max_rate[ 'cost' ] + ( floor( $above_weight ) * $tax_per_kg );
 					}
 				}elseif( ( $total_weight <= $max_weight )){
 
 					foreach( $shipping_table as $key => $rate ){
 
-						if( $total_weight <= $rate[ weight ] ){
+						if( $total_weight <= $rate[ 'weight' ] ){
 
-							$final_increase = $rate[ cost ];
+							$final_increase = $rate[ 'cost' ];
 							break;
 						}
 					}
