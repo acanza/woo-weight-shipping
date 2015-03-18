@@ -3,7 +3,7 @@
 Plugin Name: Woo Weight Shipping
 Plugin URI: https://github.com/acanza/woo-weight-shipping
 Description: Woo Weight Shipping is a WooCommerce add-on which allow you setting up shipping rate depend on the weight of purchase and customer post code.
-Version: 1.2.1
+Version: 1.2.2
 Author: Woodemia
 Author URI: http://woodemia.com
 License: GPL2
@@ -21,18 +21,21 @@ if(class_exists('Woocommerce') != true)
  * Check if WooCommerce is active
  **/
 if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) return;
+
+function Woo_Weight_Shipping_init() {   
+
+	if( class_exists( 'WC_Woo_Weight_Shipping' ) ) return;
    
-   
-	class WooWeightShipping extends WC_Shipping_Flat_Rate{
+	class WC_Woo_Weight_Shipping extends WC_Shipping_Flat_Rate{
 
 		/*
 		 *	Some required plugin information
 		*/
-		var $version = '1.2.1';
+		var $version = '1.2.2';
 
 	
 		/*
-		 *	Required __construct() function that initalizes the WooWeightShipping
+		 *	Required __construct() function that initalizes the WC_Woo_Weight_Shipping
 		*/
 		public function __construct() {
 
@@ -58,7 +61,10 @@ if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', 
 		 *	init function
 		*/
 		public function init() {
-		
+
+			// Define available countries list
+			$this->specific_allowed_countries 	= WC()->countries->get_shipping_countries();
+
 			$this->init_form_fields();
 			$this->init_settings();
 			
@@ -114,7 +120,6 @@ if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', 
 		* Initialise Gateway Settings Form Fields
 		*/
 		function init_form_fields() {
-			global $woocommerce;
 			
 			$this->form_fields = array(
 			'enabled' => array(
@@ -136,17 +141,16 @@ if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', 
 							'class'         => 'availability wc-enhanced-select',
 							'default'		=> 'all',
 							'options'		=> array(
-								'including'		=> __( 'All allowed countries', 'woocommerce' ),
-								'excluding'		=> __( 'Excluding selected countries', 'woocommerce' ),
+								'specific' 	=> __( 'Specific Countries', 'woocommerce' )
 							)
 						),
 			'countries' => array(
 							'title'			=> __( 'Countries', 'woocommerce' ),
-							'type'			=> 'multiselect',
+							'type'			=> 'select',
 							'class'			=> 'wc-enhanced-select',
 							'css'			=> 'width: 450px;',
 							'default'		=> '',
-							'options'		=> array(),
+							'options'		=> $this->specific_allowed_countries,
 							'custom_attributes' => array(
 								'data-placeholder' => __( 'Select some countries', 'woocommerce' )
 							)
@@ -871,29 +875,16 @@ if ( !in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', 
 			echo '</pre>';
 		}
 	}
-	
+}
+add_action('plugins_loaded', 'Woo_Weight_Shipping_init', 0);
 
-	/**
-	* Inicializamos plugin
-	* 
-	**/
-	if (class_exists('WooWeightShipping')){
-		// Initialize the your plugin
-		$WooWeightShipping = new WooWeightShipping();
-
-		if (isset($WooWeightShipping))
-		{
-			// Add an activation hook
-			register_activation_hook( __FILE__, array( $WooWeightShipping, 'activate' ) );
-			register_deactivation_hook( __FILE__, array( $WooWeightShipping, 'deactivate' ) );
-		}
-		
-		function add_increase_rate_method( $methods ) {
-			$methods[] = 'WooWeightShipping'; return $methods;
-		}
-
-		add_filter('woocommerce_shipping_methods', 'add_increase_rate_method' );
-	}
+/**
+* Add Woo Weight Shipping to the shipping methods list
+**/		
+function add_Woo_Weight_Shipping_method( $methods ) {
+	$methods[] = 'WC_Woo_Weight_Shipping'; return $methods;
+}
+add_filter('woocommerce_shipping_methods', 'add_Woo_Weight_Shipping_method' );
 
 
 ?>
