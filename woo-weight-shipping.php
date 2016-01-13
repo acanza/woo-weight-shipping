@@ -3,7 +3,7 @@
 Plugin Name: Woo Weight Shipping
 Plugin URI: https://github.com/acanza/woo-weight-shipping
 Description: Woo Weight Shipping is a WooCommerce add-on which allow you setting up shipping rate depend on the weight of purchase and customer post code.
-Version: 1.2.6
+Version: 1.2.7
 Author: Woodemia
 Author URI: http://woodemia.com
 License: GPL2
@@ -12,10 +12,6 @@ License: GPL2
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly
 }
-
-// Derive the current path and load up WooCommerce
-if( class_exists('Woocommerce') != true )
-	require_once( WP_PLUGIN_DIR.'/woocommerce/woocommerce.php' );
 
 /**
  * Check if WooCommerce is active
